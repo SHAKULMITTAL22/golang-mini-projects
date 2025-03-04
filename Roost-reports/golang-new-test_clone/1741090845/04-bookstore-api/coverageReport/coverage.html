@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>bookstore: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">bookstore/books.go (0.0%)</option>
+				
+				<option value="file1">bookstore/main.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "encoding/json"
+        "io/ioutil"
+)
+
+// Get books - returns books and error
+func getBooks() ([]Book, error) <span class="cov0" title="0">{
+        books := []Book{}
+        booksByte, err := ioutil.ReadFile("./books.json")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">err = json.Unmarshal(booksByte, &amp;books)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return books, nil</span>
+}
+
+// Get books - returns book, book index and error
+func getBookById(id string) (Book, int, error) <span class="cov0" title="0">{
+        books, err := getBooks()
+        var requestedBook Book
+        var requestedBookIndex int
+
+        if err != nil </span><span class="cov0" title="0">{
+                return Book{}, 0, err
+        }</span>
+
+        <span class="cov0" title="0">for i, book := range books </span><span class="cov0" title="0">{
+                if book.Id == id </span><span class="cov0" title="0">{
+                        requestedBook = book
+                        requestedBookIndex = i
+                }</span>
+        }
+
+        <span class="cov0" title="0">return requestedBook, requestedBookIndex, nil</span>
+}
+
+// save books to books.json file
+func saveBooks(books []Book) error <span class="cov0" title="0">{
+
+        // converting into bytes for writing into a file
+        booksBytes, err := json.Marshal(books)
+
+        checkError(err)
+
+        err = ioutil.WriteFile("./books.json", booksBytes, 0644)
+
+        return err
+
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "encoding/json"
+        "fmt"
+        "io/ioutil"
+        "log"
+        "net/http"
+)
+
+// struct based on books.json file. Please refer
+type Book struct {
+        Id       string `json:"id"`
+        Title    string `json:"title"`
+        Author   string `json:"author"`
+        Price    string `json:"price"`
+        Imageurl string `json:"image_url"`
+}
+
+// define port
+const PORT string = ":8080"
+
+// message to send as json response
+type Message struct {
+        Msg string
+}
+
+// response as json format
+func jsonMessageByte(msg string) []byte <span class="cov0" title="0">{
+        errrMessage := Message{msg}
+        byteContent, _ := json.Marshal(errrMessage)
+        return byteContent
+}</span>
+
+// print logs in console
+func checkError(err error) <span class="cov0" title="0">{
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Error - %v", err)
+        }</span>
+
+}
+
+// main function starts here
+func main() <span class="cov0" title="0">{
+
+        // http://localhost:8080
+        http.HandleFunc("/", handleGetBooks)
+
+        // http://localhost:8080/book?id=1
+        http.HandleFunc("/book", handleGetBookById)
+
+        // http://localhost:8080/add
+        http.HandleFunc("/add", handleAddBook)
+
+        // http://localhost:8080/update
+        http.HandleFunc("/update", handleUpdateBook)
+
+        // http://localhost:8080/delete?id=1
+        http.HandleFunc("/delete", handleDeleteBookById)
+
+        fmt.Printf("App is listening on %v\n", PORT)
+        err := http.ListenAndServe(PORT, nil)
+        // stop the app is any error to start the server
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+}
+
+// List all the books handler
+func handleGetBooks(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        books, err := getBooks()
+
+        // send server error as response
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server Error %v\n", err)
+                w.WriteHeader(500)
+                w.Write(jsonMessageByte("Internal server error"))
+        }</span> else<span class="cov0" title="0"> {
+                booksByte, _ := json.Marshal(books)
+                w.Write(booksByte)
+        }</span>
+
+}
+
+// get book by id handler
+func handleGetBookById(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+
+        query := r.URL.Query()
+        // get book id from URL
+        bookId := query.Get("id")
+        book, _, err := getBookById(bookId)
+        // send server error as response
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server Error %v\n", err)
+                w.WriteHeader(500)
+                w.Write(jsonMessageByte("Internal server error"))
+        }</span> else<span class="cov0" title="0"> {
+                // check requested book exists or not
+                if (Book{}) == book </span><span class="cov0" title="0">{
+                        w.Write(jsonMessageByte("Book Not found"))
+                }</span> else<span class="cov0" title="0"> {
+                        bookByte, _ := json.Marshal(book)
+                        w.Write(bookByte)
+                }</span>
+        }
+}
+
+// add book handler
+func handleAddBook(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        // check for post method
+        if r.Method != "POST" </span><span class="cov0" title="0">{
+                w.WriteHeader(405)
+                w.Write(jsonMessageByte(r.Method + " - Method not allowed"))
+        }</span> else<span class="cov0" title="0"> {
+                // read the body
+                newBookByte, err := ioutil.ReadAll(r.Body)
+                // check for valid data from client
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("Client Error %v\n", err)
+                        w.WriteHeader(400)
+                        w.Write(jsonMessageByte("Bad Request"))
+                }</span> else<span class="cov0" title="0"> {
+                        books, _ := getBooks() // get all books
+                        var newBooks []Book    // to add new book
+
+                        json.Unmarshal(newBookByte, &amp;newBooks) // new book added
+                        books = append(books, newBooks...)     // add both
+                        // Write all the books in books.json file
+                        err = saveBooks(books)
+                        // send server error as response
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Server Error %v\n", err)
+                                w.WriteHeader(500)
+                                w.Write(jsonMessageByte("Internal server error"))
+                        }</span> else<span class="cov0" title="0"> {
+                                w.Write(jsonMessageByte("New book added successfully"))
+                        }</span>
+
+                }
+        }
+}
+
+// update book handler
+func handleUpdateBook(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        // check for post method
+        if r.Method != "POST" </span><span class="cov0" title="0">{
+                w.WriteHeader(405)
+                w.Write(jsonMessageByte(r.Method + " - Method not allowed"))
+        }</span> else<span class="cov0" title="0"> {
+                // read the body
+                updateBookByte, err := ioutil.ReadAll(r.Body)
+                // check for valid data from client
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("Client Error %v\n", err)
+                        w.WriteHeader(400)
+                        w.Write(jsonMessageByte("Bad Request"))
+                }</span> else<span class="cov0" title="0"> {
+                        var updateBook Book // to update a book
+
+                        err = json.Unmarshal(updateBookByte, &amp;updateBook) // new book added
+                        checkError(err)
+                        id := updateBook.Id
+
+                        book, _, _ := getBookById(id)
+                        // check requested book exists or not
+                        if (Book{}) == book </span><span class="cov0" title="0">{
+                                w.Write(jsonMessageByte("Book Not found"))
+                        }</span> else<span class="cov0" title="0"> {
+                                books, _ := getBooks()
+
+                                for i, book := range books </span><span class="cov0" title="0">{
+                                        if book.Id == updateBook.Id </span><span class="cov0" title="0">{
+                                                books[i] = updateBook
+                                        }</span>
+                                }
+                                // write books in books.json
+                                <span class="cov0" title="0">err = saveBooks(books)
+                                // send server error as response
+                                if err != nil </span><span class="cov0" title="0">{
+                                        log.Printf("Server Error %v\n", err)
+                                        w.WriteHeader(500)
+                                        w.Write(jsonMessageByte("Internal server error"))
+                                }</span> else<span class="cov0" title="0"> {
+                                        w.Write(jsonMessageByte("Book updated successfully"))
+                                }</span>
+                        }
+                }
+        }
+}
+
+// delete book by id handler
+func handleDeleteBookById(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+
+        query := r.URL.Query()
+        // get book id from URL
+        bookId := query.Get("id")
+        book, book_index, err := getBookById(bookId)
+        // send server error as response
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server Error %v\n", err)
+                w.WriteHeader(500)
+                w.Write(jsonMessageByte("Internal server error"))
+        }</span> else<span class="cov0" title="0"> {
+                // check requested book exists or not
+                if (Book{}) == book </span><span class="cov0" title="0">{
+                        w.Write(jsonMessageByte("Book Not found"))
+                }</span> else<span class="cov0" title="0"> {
+                        books, _ := getBooks()
+                        // remove books from slice
+                        books = append(books[:book_index], books[book_index+1:]...)
+                        saveBooks(books)
+                        w.Write(jsonMessageByte("Book deleted successfully"))
+                }</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
